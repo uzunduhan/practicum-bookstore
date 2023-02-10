@@ -1,6 +1,7 @@
 using WebApi.DBOperations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
  builder.Services.AddDbContext<BookStoreDbContext>(optins=>optins.UseInMemoryDatabase(databaseName: "BookStoreDB"));
+
+ builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
 var app = builder.Build();
 

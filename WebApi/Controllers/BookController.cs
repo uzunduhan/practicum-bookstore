@@ -1,9 +1,13 @@
-using System.Linq;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.BookOperations.CreateBook;
+using WebApi.BookOperations.DeleteBook;
+using WebApi.BookOperations.GetBookDetail;
 using WebApi.BookOperations.GetBooks;
+using WebApi.BookOperations.UpdateBook;
 using WebApi.DBOperations;
 using static WebApi.BookOperations.CreateBook.CreateBookCommand;
+using static WebApi.BookOperations.UpdateBook.UpdateBookCommand;
 
 namespace WebApi.Controllers{
 
@@ -14,16 +18,18 @@ namespace WebApi.Controllers{
 
 
         private readonly BookStoreDbContext _context;
+        private readonly IMapper _mapper;
 
-        public BookController(BookStoreDbContext context)
+        public BookController(BookStoreDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public IActionResult GetBooks()
         {
-          GetBooksQuery query = new GetBooksQuery(_context);
+          GetBooksQuery query = new GetBooksQuery(_context, _mapper);
           var result = query.Handle();
           return Ok(result);
           
@@ -31,10 +37,23 @@ namespace WebApi.Controllers{
 
         
         [HttpGet("{id}")]
-        public Book GetByID(int id)
+        public IActionResult GetByID(int id)
         {
-            var book = _context.Books.Where(book=>book.ID == id).SingleOrDefault();
-            return book;
+            BookDetailViewModel result;
+            try
+            {
+              GetBookDetailQuery query = new GetBookDetailQuery(_context, _mapper);
+              query.BookId = id;
+              result = query.Handle();
+            }
+            catch (Exception ex)
+            {
+                
+                return BadRequest(ex.Message);
+            }
+
+            return Ok(result);
+          
         }
 
 
@@ -49,7 +68,7 @@ namespace WebApi.Controllers{
         [HttpPost]
         public IActionResult AddBook([FromBody] CreateBookModel newBook)
         {
-            CreateBookCommand command = new CreateBookCommand(_context); 
+            CreateBookCommand command = new CreateBookCommand(_context, _mapper); 
 
             try
             {
@@ -70,20 +89,20 @@ namespace WebApi.Controllers{
 
         //put
         [HttpPut("{id}")]
-        public IActionResult UpdateBook(int id, [FromBody] Book updatedBook)
+        public IActionResult UpdateBook(int id, [FromBody] UpdateBookModel updatedBook)
         {
-            var book = _context.Books.SingleOrDefault(x=>x.ID == id);
-            if(book is null)
-            {
-                return BadRequest();
-            }
-
-            book.GenreId = updatedBook.GenreId != default ? updatedBook.GenreId: book.GenreId;
-            book.PageCount = updatedBook.PageCount != default ? updatedBook.PageCount : book.PageCount;
-            book.PublishDate = updatedBook.PublishDate != default ? updatedBook.PublishDate : book.PublishDate;
-            book.Title = updatedBook.Title != default ? updatedBook.Title: book.Title;
-
-            _context.SaveChanges();
+         try
+         {
+            UpdateBookCommand command = new UpdateBookCommand(_context);
+            command.BookId = id;
+            command.Model = updatedBook;
+            command.Handle();
+         }
+         catch (Exception ex)
+         {
+            
+            return BadRequest(ex.Message);
+         }
 
             return Ok();
         }
@@ -91,22 +110,21 @@ namespace WebApi.Controllers{
         [HttpDelete("{id}")]
         public IActionResult DeleteBook(int id)
         {
-            var book = _context.Books.SingleOrDefault(x=>x.ID == id);
-            if(book is null)
+            try
             {
-                return BadRequest();
-
+                 DeleteBookCommand command = new DeleteBookCommand(_context);
+                 command.BookId = id;
+                 command.Handle();
             }
-
-            _context.Books.Remove(book);
-            _context.SaveChanges();
+            catch (Exception ex)
+            {
+                
+                return BadRequest(ex.Message);
+            }
+  
+          
             return Ok();
         }
-
-
-
-
-
 
     }
 }
