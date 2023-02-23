@@ -17,6 +17,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
  builder.Services.AddDbContext<BookStoreDbContext>(optins=>optins.UseInMemoryDatabase(databaseName: "BookStoreDB"));
+ builder.Services.AddScoped<IBookStoreDbContext>(provider=>provider.GetService<BookStoreDbContext>());
 
  builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
